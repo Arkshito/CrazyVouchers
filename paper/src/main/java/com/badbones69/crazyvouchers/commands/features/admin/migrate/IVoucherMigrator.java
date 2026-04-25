@@ -16,13 +16,14 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 public abstract class IVoucherMigrator {
 
     protected @NotNull final CrazyVouchers plugin = CrazyVouchers.get();
 
     protected @NotNull final FusionPaper fusion = this.plugin.getFusion();
+
+    protected @NotNull final StringUtils utils = this.fusion.getStringUtils();
 
     protected @NotNull final CrazyManager crazyManager = this.plugin.getCrazyManager();
 
@@ -60,20 +61,18 @@ public abstract class IVoucherMigrator {
     }
 
     public void sendMessage(@NotNull final List<String> files, final int success, final int failed) {
-        final Map<String, String> placeholders = new HashMap<>();
+        Messages.successfully_migrated.sendMessage(this.sender, new HashMap<>() {{
+            if (files.size() > 1) {
+                put("{files}", utils.toString(files));
+            } else {
+                put("{files}", files.getFirst());
+            }
 
-        if (files.size() > 1) {
-            placeholders.put("{files}", StringUtils.toString(files));
-        } else {
-            placeholders.put("{files}", files.getFirst());
-        }
-
-        placeholders.put("{succeeded_amount}", String.valueOf(success));
-        placeholders.put("{failed_amount}", String.valueOf(failed));
-        placeholders.put("{type}", type.getName());
-        placeholders.put("{time}", time());
-
-        Messages.successfully_migrated.sendMessage(this.sender, placeholders);
+            put("{succeeded_amount}", String.valueOf(success));
+            put("{failed_amount}", String.valueOf(failed));
+            put("{type}", type.getName());
+            put("{time}", time());
+        }});
     }
 
     public @NotNull final String time() {

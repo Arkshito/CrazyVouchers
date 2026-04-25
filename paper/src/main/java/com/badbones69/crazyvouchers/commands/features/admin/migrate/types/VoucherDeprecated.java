@@ -4,7 +4,6 @@ import com.badbones69.crazyvouchers.api.enums.FileKeys;
 import com.badbones69.crazyvouchers.commands.features.admin.migrate.IVoucherMigrator;
 import com.badbones69.crazyvouchers.commands.features.admin.migrate.enums.MigrationType;
 import com.badbones69.crazyvouchers.config.types.ConfigKeys;
-import com.ryderbelserion.fusion.core.api.enums.Level;
 import com.ryderbelserion.fusion.paper.files.types.PaperCustomFile;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
@@ -39,7 +38,7 @@ public class VoucherDeprecated extends IVoucherMigrator {
                             final ConfigurationSection voucher = section.getConfigurationSection(key);
 
                             if (voucher == null) {
-                                this.fusion.log(Level.WARNING, "<red>%s</red> is not a valid configuration section.", key);
+                                this.fusion.log("warn", "<red>{}</red> is not a valid configuration section.", key);
 
                                 continue;
                             }
@@ -55,10 +54,10 @@ public class VoucherDeprecated extends IVoucherMigrator {
                                     section.set("item", material);
                                     section.set("custom-model-data", model_data);
                                 } else {
-                                    this.fusion.log(Level.WARNING, "<red>vouchers.%s.item</red> does not contain <red>custom model data</red>, We cannot migrate.", key);
+                                    this.fusion.log("warn", "<red>vouchers.{}.item</red> does not contain <red>custom model data</red>, We cannot migrate.", key);
                                 }
                             } else {
-                                this.fusion.log(Level.WARNING, "<red>vouchers.%s.item</red> does not exist.", key);
+                                this.fusion.log("warn", "<red>vouchers.{}.item</red> does not exist.", key);
                             }
 
                             if (voucher.contains("random-commands") && voucher.isList("random-commands")) {
@@ -96,7 +95,7 @@ public class VoucherDeprecated extends IVoucherMigrator {
                             final ConfigurationSection voucher = section.getConfigurationSection(key);
 
                             if (voucher == null) {
-                                this.fusion.log(Level.WARNING, "<red>%s</red> is not a valid configuration section.", key);
+                                this.fusion.log("warn", "<red>{}</red> is not a valid configuration section.", key);
 
                                 continue;
                             }
@@ -130,7 +129,7 @@ public class VoucherDeprecated extends IVoucherMigrator {
             case MULTIPLE -> {
                 final Path voucher_dir = this.dataPath.resolve("vouchers");
 
-                final List<Path> voucher_files = this.fusion.getFilesByPath(voucher_dir, ".yml");
+                final List<Path> voucher_files = this.fusion.getFiles(voucher_dir, ".yml");
 
                 for (final Path path : voucher_files) {
                     final Optional<PaperCustomFile> optional = this.fileManager.getPaperFile(path);
@@ -138,7 +137,7 @@ public class VoucherDeprecated extends IVoucherMigrator {
                     final String fileName = path.getFileName().toString();
 
                     if (optional.isEmpty()) {
-                        this.fusion.log(Level.WARNING, "<red>%s</red> does not exist in the file cache", fileName);
+                        this.fusion.log("warn", "<red>{}</red> does not exist in the file cache", fileName);
 
                         failed.add("<red>⤷ " + fileName);
 
@@ -148,7 +147,7 @@ public class VoucherDeprecated extends IVoucherMigrator {
                     final PaperCustomFile customFile = optional.get();
 
                     if (!customFile.isLoaded()) {
-                        this.fusion.log(Level.WARNING, "<red>%s</red> configuration is invalid, likely not loaded properly. Please check console :)", fileName);
+                        this.fusion.log("warn", "<red>{}</red> configuration is invalid, likely not loaded properly. Please check console :)", fileName);
 
                         failed.add("<red>⤷ " + fileName);
 
@@ -160,7 +159,7 @@ public class VoucherDeprecated extends IVoucherMigrator {
                     final ConfigurationSection section = configuration.getConfigurationSection("voucher");
 
                     if (section == null) {
-                        this.fusion.log(Level.WARNING, "Configuration section for <red>%s</red> was not found.", fileName);
+                        this.fusion.log("warn", "Configuration section for <red>{}</red> was not found.", fileName);
 
                         failed.add("<red>⤷ " + fileName);
 
@@ -178,10 +177,10 @@ public class VoucherDeprecated extends IVoucherMigrator {
                             section.set("item", material);
                             section.set("custom-model-data", model_data);
                         } else {
-                            this.fusion.log(Level.WARNING, "<red>%s</red> does not contain <red>voucher.item</red> path in the configuration section.", fileName);
+                            this.fusion.log("warn", "<red>{}</red> does not contain <red>voucher.item</red> path in the configuration section.", fileName);
                         }
                     } else {
-                        this.fusion.log(Level.WARNING, "<red>vouchers.%s.item</red> does not exist.", fileName);
+                        this.fusion.log("warn", "<red>vouchers.{}.item</red> does not exist.", fileName);
                     }
 
                     if (section.contains("random-commands") && section.isList("random-commands")) {
@@ -207,7 +206,7 @@ public class VoucherDeprecated extends IVoucherMigrator {
 
                 final Path code_dir = this.dataPath.resolve("codes");
 
-                final List<Path> code_files = this.fusion.getFilesByPath(code_dir, ".yml");
+                final List<Path> code_files = this.fusion.getFiles(code_dir, ".yml");
 
                 for (final Path path : code_files) {
                     final Optional<PaperCustomFile> optional = this.fileManager.getPaperFile(path);
@@ -215,7 +214,7 @@ public class VoucherDeprecated extends IVoucherMigrator {
                     final String fileName = path.getFileName().toString();
 
                     if (optional.isEmpty()) {
-                        this.fusion.log(Level.WARNING, "<red>%s</red> does not exist in the file cache", fileName);
+                        this.fusion.log("warn", "<red>{}</red> does not exist in the file cache", fileName);
 
                         failed.add("<red>⤷ " + fileName);
 
@@ -225,7 +224,7 @@ public class VoucherDeprecated extends IVoucherMigrator {
                     final PaperCustomFile customFile = optional.get();
 
                     if (!customFile.isLoaded()) {
-                        this.fusion.log(Level.WARNING, "<red>%s</red> configuration is invalid, likely not loaded properly. Please check console :)", fileName);
+                        this.fusion.log("warn", "<red>{}</red> configuration is invalid, likely not loaded properly. Please check console :)", fileName);
 
                         failed.add("<red>⤷ " + fileName);
 
@@ -237,7 +236,7 @@ public class VoucherDeprecated extends IVoucherMigrator {
                     final ConfigurationSection section = configuration.getConfigurationSection("voucher-code");
 
                     if (section == null) {
-                        this.fusion.log(Level.WARNING, "Configuration section for <red>%s</red> was not found.", fileName);
+                        this.fusion.log("warn", "Configuration section for <red>{}</red> was not found.", fileName);
 
                         failed.add("<red>⤷ " + fileName);
 
@@ -270,12 +269,10 @@ public class VoucherDeprecated extends IVoucherMigrator {
         final int convertedCount = success.size();
         final int failedCount = failed.size();
 
-        final List<String> files = new ArrayList<>(failedCount + convertedCount);
-
-        files.addAll(failed);
-        files.addAll(success);
-
-        sendMessage(files, convertedCount, failedCount);
+        sendMessage(new ArrayList<>(failedCount + convertedCount) {{
+            addAll(failed);
+            addAll(success);
+        }}, convertedCount, failedCount);
 
         this.crazyManager.load(true);
     }

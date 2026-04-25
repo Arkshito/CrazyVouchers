@@ -11,12 +11,11 @@ import com.badbones69.crazyvouchers.api.enums.misc.PersistentKeys;
 import com.badbones69.crazyvouchers.api.events.VoucherRedeemEvent;
 import com.badbones69.crazyvouchers.support.NexoSupport;
 import com.badbones69.crazyvouchers.utils.ItemUtils;
-import com.ryderbelserion.fusion.core.api.constants.ModSupport;
-import com.ryderbelserion.fusion.core.api.enums.Level;
+import com.ryderbelserion.fusion.core.api.support.ModSupport;
 import com.ryderbelserion.fusion.core.utils.StringUtils;
 import com.ryderbelserion.fusion.paper.FusionPaper;
-import com.ryderbelserion.fusion.paper.builders.items.ItemBuilder;
-import com.ryderbelserion.fusion.paper.builders.items.types.custom.CustomBuilder;
+import com.ryderbelserion.fusion.paper.builders.ItemBuilder;
+import com.ryderbelserion.fusion.paper.builders.types.custom.CustomBuilder;
 import com.ryderbelserion.fusion.paper.utils.ColorUtils;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.ItemLore;
@@ -42,6 +41,7 @@ public class Voucher {
     private final CrazyVouchers plugin = CrazyVouchers.get();
     private final Server server = this.plugin.getServer();
     private final FusionPaper fusion = this.plugin.getFusion();
+    private final StringUtils utils = this.fusion.getStringUtils();
 
     private final CrazyManager crazyManager = this.plugin.getCrazyManager();
 
@@ -168,18 +168,10 @@ public class Voucher {
             this.itemBuilder.setTrim(trimPattern, trimMaterial);
         }
 
-        final String rgb = section.getString("settings.rgb", "");
-
-        final String color = section.getString("settings.color", "");
-
-        this.itemBuilder.setColor(!color.isEmpty() ? color : !rgb.isEmpty() ? rgb : "");
-
         this.itemBuilder.withSkull(section.getString("skull", ""));
 
-        switch (section.getString("glowing", "none").toLowerCase()) {
-            case "add_glow", "true" -> this.itemBuilder.addEnchantGlint();
-            case "remove_glow", "false" -> this.itemBuilder.removeEnchantGlint();
-            case "none" -> {}
+        if (section.contains("glowing")) {
+            this.itemBuilder.addEnchantGlint(section.getBoolean("glowing", false));
         }
 
         this.commands = section.isList("commands") ? section.getStringList("commands") : List.of(section.getString("commands", ""));
@@ -272,20 +264,20 @@ public class Voucher {
         this.fireworkToggle = section.getBoolean("options.firework.toggle", false);
 
         if (this.fireworkToggle) {
-            for (final String fireworkColor : section.getString("options.firework.colors", "").split(", ")) {
-                this.fireworkColors.add(ColorUtils.getColor(fireworkColor));
+            for (final String color : section.getString("options.firework.colors", "").split(", ")) {
+                this.fireworkColors.add(ColorUtils.getColor(color));
             }
         }
 
         this.isEdible = section.getBoolean("options.is-edible", false) && this.itemBuilder.isEdible();
 
         if (section.contains("chance-commands")) {
-            this.fusion.log(Level.WARNING, "We detected that you have the list version of chance-commands which is no longer used, Please run /crazyvouchers migrate -mt VouchersDeprecated");
+            this.fusion.log("warn", "We detected that you have the list version of chance-commands which is no longer used, Please run /crazyvouchers migrate -mt VouchersDeprecated");
         }
 
         if (section.contains("random-commands")) {
             if (section.isList("random-commands")) {
-                this.fusion.log(Level.WARNING, "We've detected that you have the list version of random-commands which is no longer used, Please run /crazyvouchers migrate -mt VouchersDeprecated");
+                this.fusion.log("warn", "We've detected that you have the list version of random-commands which is no longer used, Please run /crazyvouchers migrate -mt VouchersDeprecated");
             } else {
                 final ConfigurationSection randomCommands = section.getConfigurationSection("random-commands");
 
@@ -361,12 +353,10 @@ public class Voucher {
 
                     this.server.getOnlinePlayers().forEach(staff -> {
                         if (PermissionKeys.crazyvouchers_notify.hasPermission(staff)) {
-                            final Map<String, String> values = new HashMap<>();
-
-                            values.put("{player}", player.getName());
-                            values.put("{id}", id);
-
-                            Messages.notify_staff.sendMessage(staff, values);
+                            Messages.notify_staff.sendMessage(staff, new HashMap<>() {{
+                                put("{player}", player.getName());
+                                put("{id}", id);
+                            }});
                         }
                     });
 
@@ -385,7 +375,7 @@ public class Voucher {
                             builder.addLines(lore.lines());
                         }
 
-                        final Component warning_text = this.fusion.asComponent(player, text, placeholders);
+                        final Component warning_text = this.fusion.parse(player, text, placeholders);
 
                         builder.addLine(warning_text);
 
@@ -535,7 +525,7 @@ public class Voucher {
 
                     FileKeys.data.save();
                 } else {
-                    this.fusion.log(Level.WARNING, "%s is already in the data.yml somehow.", id == null ? "N/A" : id);
+                    this.fusion.log("warn", "{} is already in the data.yml somehow.", id == null ? "N/A" : id);
                 }
             }
         }
@@ -583,22 +573,17 @@ public class Voucher {
     public boolean hasArgument() {
         return this.hasArgument;
     }
-    
+
     public ItemStack buildItem(@NotNull final Player player) {
         return buildItem(player, 1);
     }
 
     private @NotNull final SettingsManager config = ConfigManager.getConfig();
-    
+
     public ItemStack buildItem(@NotNull final Player player, final int amount) {
         if (!this.nexoItemId.isEmpty() && NexoSupport.isAvailable()) {
             final ItemStack nexoItem = NexoSupport.buildItem(
-                    this.nexoItemId,
-                    this.nexoOverrideLore,
-                    this.nexoOverrideGlowing,
-                    this.nexoOverrideCustomModelData,
-                    amount
-            );
+                    this.nexoItemId, this.nexoOverrideLore, this.nexoOverrideGlowing, this.nexoOverrideCustomModelData, amount);
 
             if (nexoItem != null) {
                 setUniqueId(nexoItem);
@@ -631,16 +616,11 @@ public class Voucher {
 
         return itemStacks;
     }
-    
+
     public ItemStack buildItem(@NotNull final Player player, @NotNull final String argument, final int amount) {
         if (!this.nexoItemId.isEmpty() && NexoSupport.isAvailable()) {
             final ItemStack nexoItem = NexoSupport.buildItem(
-                    this.nexoItemId,
-                    this.nexoOverrideLore,
-                    this.nexoOverrideGlowing,
-                    this.nexoOverrideCustomModelData,
-                    amount
-            );
+                    this.nexoItemId, this.nexoOverrideLore, this.nexoOverrideGlowing, this.nexoOverrideCustomModelData, amount);
 
             if (nexoItem != null) {
                 setUniqueId(nexoItem);
@@ -716,39 +696,39 @@ public class Voucher {
     public String getVoucherUsedMessage() {
         return this.usedMessage;
     }
-    
+
     public boolean useWhiteListPermissions() {
         return this.whitelistPermissionToggle;
     }
-    
+
     public List<String> getWhitelistPermissions() {
         return this.whitelistPermissions;
     }
-    
+
     public List<String> getWhitelistCommands() {
         return this.whitelistCommands;
     }
-    
+
     public String getWhitelistPermissionMessage() {
         return this.whitelistPermissionMessage;
     }
-    
+
     public boolean usesWhitelistWorlds() {
         return this.whitelistWorldsToggle;
     }
-    
+
     public List<String> getWhitelistWorlds() {
         return this.whitelistWorlds;
     }
-    
+
     public String getWhitelistWorldMessage() {
         return this.whitelistWorldMessage;
     }
-    
+
     public List<String> getWhitelistWorldCommands() {
         return this.whitelistWorldCommands;
     }
-    
+
     public boolean useBlackListPermissions() {
         return this.blacklistPermissionsToggle;
     }
@@ -764,31 +744,31 @@ public class Voucher {
     public List<String> getBlackListPermissions() {
         return this.blacklistPermissions;
     }
-    
+
     public String getBlackListMessage() {
         return this.blacklistPermissionMessage;
     }
-    
+
     public List<String> getBlacklistCommands() {
         return this.blacklistCommands;
     }
-    
+
     public boolean useLimiter() {
         return this.limiterToggle;
     }
-    
+
     public int getLimiterLimit() {
         return this.limiterLimit;
     }
-    
+
     public boolean useTwoStepAuthentication() {
         return this.twoStepAuthentication;
     }
-    
+
     public boolean playSounds() {
         return this.soundToggle;
     }
-    
+
     public List<Sound> getSounds() {
         return this.sounds;
     }
@@ -804,11 +784,11 @@ public class Voucher {
     public boolean useFirework() {
         return this.fireworkToggle;
     }
-    
+
     public List<Color> getFireworkColors() {
         return this.fireworkColors;
     }
-    
+
     public List<String> getCommands() {
         return this.commands;
     }
@@ -859,15 +839,15 @@ public class Voucher {
 
     private String getMessage(@NotNull final ConfigurationSection section, @NotNull final String path, @NotNull final String defaultValue) {
         String safeMessage;
-        
+
         if (section.isList(path)) {
-            safeMessage = StringUtils.toString(section.getStringList(path));
-        
+            safeMessage = this.utils.toString(section.getStringList(path));
+
             return safeMessage;
         }
-        
+
         safeMessage = section.getString(path, defaultValue);
-        
+
         return safeMessage;
     }
 }

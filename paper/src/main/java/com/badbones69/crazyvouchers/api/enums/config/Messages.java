@@ -9,7 +9,6 @@ import com.badbones69.crazyvouchers.config.types.locale.CommandKeys;
 import com.badbones69.crazyvouchers.config.types.locale.MessageKeys;
 import com.badbones69.crazyvouchers.config.types.locale.MiscKeys;
 import com.ryderbelserion.fusion.core.utils.StringUtils;
-import com.ryderbelserion.fusion.kyori.utils.AdvUtils;
 import com.ryderbelserion.fusion.paper.FusionPaper;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
@@ -67,6 +66,8 @@ public enum Messages {
 
     private final FusionPaper fusion = this.plugin.getFusion();
 
+    private final StringUtils utils = this.fusion.getStringUtils();
+
     private Property<String> property;
 
     private Property<List<String>> properties;
@@ -98,15 +99,15 @@ public enum Messages {
     }
 
     public Component getMessage(@NotNull final Audience sender, @NotNull final String placeholder, @NotNull final String replacement) {
-        final Map<String, String> placeholders = new HashMap<>();
-
-        placeholders.put(placeholder, replacement);
+        Map<String, String> placeholders = new HashMap<>() {{
+            put(placeholder, replacement);
+        }};
 
         return getMessage(sender, placeholders);
     }
 
     public Component getMessage(@NotNull final Audience sender, @NotNull final Map<String, String> placeholders) {
-        placeholders.putIfAbsent("{prefix}", this.config.getProperty(ConfigKeys.command_prefix));
+        placeholders.putIfAbsent("prefix", this.config.getProperty(ConfigKeys.command_prefix));
 
         return parse(sender, placeholders);
     }
@@ -192,15 +193,23 @@ public enum Messages {
 
     public void migrate() {
         if (this.isList) {
-            this.locale.setProperty(this.properties, AdvUtils.convert(this.locale.getProperty(this.properties), true));
+            this.locale.setProperty(this.properties, this.utils.convertLegacy(this.locale.getProperty(this.properties), true));
 
             return;
         }
 
-        this.locale.setProperty(this.property, AdvUtils.convert(this.locale.getProperty(this.property), true));
+        this.locale.setProperty(this.property, this.utils.convertLegacy(this.locale.getProperty(this.property), true));
     }
 
     private @NotNull Component parse(@NotNull final Audience audience, @NotNull final Map<String, String> placeholders) {
-        return this.fusion.asComponent(audience, this.isList ? StringUtils.toString(getList()) : getString(), placeholders);
+        String message;
+
+        if (this.isList) {
+            message = this.utils.toString(getList());
+        } else {
+            message = getString();
+        }
+
+        return this.fusion.parse(audience, message, placeholders);
     }
 }

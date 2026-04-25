@@ -5,6 +5,7 @@ import com.badbones69.crazyvouchers.api.enums.config.Messages;
 import com.badbones69.crazyvouchers.api.enums.misc.PersistentKeys;
 import com.badbones69.crazyvouchers.config.ConfigManager;
 import io.papermc.paper.persistence.PersistentDataContainerView;
+import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -25,12 +26,12 @@ public class VoucherCraftListener implements Listener {
         final CraftingInventory inventory = event.getInventory();
 
         for (final ItemStack itemStack : inventory.getMatrix()) {
-            if (itemStack == null || itemStack.isEmpty()) continue;
+            if (itemStack == null || itemStack.getType() == Material.AIR) return;
 
             final PersistentDataContainerView container = itemStack.getPersistentDataContainer();
 
             if (container.has(PersistentKeys.voucher_item.getNamespacedKey())) {
-                inventory.setResult(ItemStack.empty());
+                inventory.setResult(new ItemStack(Material.AIR));
 
                 if (this.config.getProperty(ConfigKeys.prevent_using_vouchers_in_recipes_alert)) {
                     Messages.cannot_put_items_in_crafting_table.sendMessage(event.getView().getPlayer());

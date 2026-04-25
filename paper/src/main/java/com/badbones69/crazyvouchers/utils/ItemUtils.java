@@ -2,14 +2,15 @@ package com.badbones69.crazyvouchers.utils;
 
 import com.badbones69.crazyvouchers.CrazyVouchers;
 import com.badbones69.crazyvouchers.support.NexoSupport;
-import com.ryderbelserion.fusion.core.api.enums.Level;
 import com.ryderbelserion.fusion.core.utils.StringUtils;
 import com.ryderbelserion.fusion.paper.FusionPaper;
-import com.ryderbelserion.fusion.paper.builders.items.ItemBuilder;
-import com.ryderbelserion.fusion.paper.builders.items.types.PatternBuilder;
-import com.ryderbelserion.fusion.paper.builders.items.types.PotionBuilder;
-import com.ryderbelserion.fusion.paper.builders.items.types.SkullBuilder;
-import com.ryderbelserion.fusion.paper.builders.items.types.custom.CustomBuilder;
+import com.ryderbelserion.fusion.paper.builders.ItemBuilder;
+import com.ryderbelserion.fusion.paper.builders.types.PatternBuilder;
+import com.ryderbelserion.fusion.paper.builders.types.PotionBuilder;
+import com.ryderbelserion.fusion.paper.builders.types.SkullBuilder;
+import com.ryderbelserion.fusion.paper.builders.types.SpawnerBuilder;
+import com.ryderbelserion.fusion.paper.builders.types.custom.CustomBuilder;
+import net.kyori.adventure.text.logger.slf4j.ComponentLogger;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
@@ -27,7 +28,11 @@ public class ItemUtils {
 
     private static @NotNull final CrazyVouchers plugin = CrazyVouchers.get();
 
+    private static @NotNull final ComponentLogger logger = plugin.getComponentLogger();
+
     private static @NotNull final FusionPaper fusion = plugin.getFusion();
+
+    private static @NotNull final StringUtils utils = fusion.getStringUtils();
 
     /**
      * Converts a String to an ItemBuilder.
@@ -86,10 +91,8 @@ public class ItemUtils {
             itemBuilder.setUnbreakable(item.getBoolean("unbreakable-item", false));
 
             // settings
-            switch (item.getString("settings.glowing", "none").toLowerCase()) {
-                case "add_glow", "true" -> itemBuilder.addEnchantGlint();
-                case "remove_glow", "false" -> itemBuilder.removeEnchantGlint();
-                case "none" -> {}
+            if (item.contains("settings.glowing")) {
+                itemBuilder.addEnchantGlint(item.getBoolean("settings.glowing", false));
             }
 
             final String player = item.getString("settings.player", null);
@@ -109,6 +112,14 @@ public class ItemUtils {
             final String color = item.getString("settings.color", "");
 
             itemBuilder.setColor(!color.isEmpty() ? color : !rgb.isEmpty() ? rgb : "");
+
+            final String mobType = item.getString("settings.mob.type", null);
+
+            if (mobType != null && !mobType.isEmpty()) {
+                final SpawnerBuilder spawnerBuilder = itemBuilder.asSpawnerBuilder();
+
+                spawnerBuilder.withEntityType(com.ryderbelserion.fusion.paper.utils.ItemUtils.getEntity(mobType)).build();
+            }
 
             itemBuilder.setTrim(item.getString("settings.trim.pattern", ""), item.getString("settings.trim.material", ""));
 
@@ -162,6 +173,39 @@ public class ItemUtils {
     }
 
     /**
+     * Extracts Nexo prize items from a YAML items section (use_different_items_layout mode).
+     * Only processes entries that have a "nexo-item" key defined.
+     */
+    public static List<ItemStack> convertNexoItems(@Nullable final ConfigurationSection section) {
+        final List<ItemStack> cache = new ArrayList<>();
+
+        if (section == null || !NexoSupport.isAvailable()) return cache;
+
+        for (final String key : section.getKeys(false)) {
+            final ConfigurationSection item = section.getConfigurationSection(key);
+
+            if (item == null) continue;
+
+            final String nexoId = item.getString("nexo-item", "");
+
+            if (nexoId.isEmpty()) continue;
+
+            final List<String> overrideLore = item.isList("lore") ? item.getStringList("lore") : List.of();
+            final int amount = item.getInt("amount", 1);
+
+            final ItemStack nexoItem = NexoSupport.buildItem(nexoId, overrideLore, "none", -1, amount);
+
+            if (nexoItem != null) {
+                cache.add(nexoItem);
+            } else {
+                fusion.log("warn", "Nexo item '{}' not found, skipping prize item.", nexoId);
+            }
+        }
+
+        return cache;
+    }
+
+    /**
      * Converts a string to an ItemBuilder with a placeholder for errors.
      *
      * @param itemString the string you wish to convert.
@@ -198,11 +242,11 @@ public class ItemUtils {
                         try {
                             itemBuilder.asSkullBuilder().withName(value).build();
                         } catch (final Exception exception) {
-                            fusion.log(Level.WARNING, "Could create skull builder because the item is not a player head. You can ignore this, This is a restriction of the current system.");
+                            fusion.log("warn", "Could create skull builder because the item is not a player head. You can ignore this, This is a restriction of the current system.");
                         }
                     }
                     case "skull" -> itemBuilder.withSkull(value);
-                    case "unbreakable-item" -> itemBuilder.setUnbreakable(StringUtils.tryParseBoolean(value).orElse(false));
+                    case "unbreakable-item" -> itemBuilder.setUnbreakable(utils.tryParseBoolean(value).orElse(false));
                     case "custom-model-data" -> itemBuilder.asCustomBuilder().setCustomModelData(value);
                     case "hide-tool-tip" -> itemBuilder.hideToolTip();
                     case "trim" -> {
@@ -214,21 +258,13 @@ public class ItemUtils {
                         itemBuilder.setTrim(trim.toLowerCase(), material.toLowerCase());
                     }
 
-                    case "glowing" -> {
-                        final boolean isGlowing = StringUtils.tryParseBoolean(value).orElse(false);
-
-                        if (isGlowing) {
-                            itemBuilder.addEnchantGlint();
-                        } else {
-                            itemBuilder.removeEnchantGlint();
-                        }
-                    }
+                    case "glowing" -> itemBuilder.addEnchantGlint(utils.tryParseBoolean(value).orElse(false));
 
                     default -> {
                         final Enchantment enchantment = com.ryderbelserion.fusion.paper.utils.ItemUtils.getEnchantment(getEnchant(option));
 
                         if (enchantment != null) {
-                            final Optional<Number> level = StringUtils.tryParseInt(value);
+                            final Optional<Number> level = utils.tryParseInt(value);
 
                             itemBuilder.addEnchantment(getEnchant(option), level.map(Number::intValue).orElse(1));
                         }
@@ -269,39 +305,6 @@ public class ItemUtils {
      */
     public static List<ItemBuilder> convertStringList(@NotNull final List<String> itemStrings, @NotNull final String placeholder) {
         return itemStrings.stream().map(itemString -> convertString(itemString, placeholder)).collect(Collectors.toList());
-    }
-
-    /**
-     * Extracts Nexo prize items from a YAML items section (use_different_items_layout mode).
-     * Only processes entries that have a "nexo-item" key defined.
-     */
-    public static List<ItemStack> convertNexoItems(@Nullable final ConfigurationSection section) {
-        final List<ItemStack> cache = new ArrayList<>();
-
-        if (section == null || !NexoSupport.isAvailable()) return cache;
-
-        for (final String key : section.getKeys(false)) {
-            final ConfigurationSection item = section.getConfigurationSection(key);
-
-            if (item == null) continue;
-
-            final String nexoId = item.getString("nexo-item", "");
-
-            if (nexoId.isEmpty()) continue;
-
-            final List<String> overrideLore = item.isList("lore") ? item.getStringList("lore") : List.of();
-            final int amount = item.getInt("amount", 1);
-
-            final ItemStack nexoItem = NexoSupport.buildItem(nexoId, overrideLore, "none", -1, amount);
-
-            if (nexoItem != null) {
-                cache.add(nexoItem);
-            } else {
-                fusion.log(Level.WARNING, "Nexo item '%s' not found, skipping prize item.", nexoId);
-            }
-        }
-
-        return cache;
     }
 
     public static String getEnchant(@NotNull final String enchant) {

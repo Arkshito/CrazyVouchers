@@ -12,7 +12,6 @@ import org.bukkit.permissions.PermissionDefault;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class CommandTypes extends BaseCommand {
 
@@ -56,20 +55,18 @@ public class CommandTypes extends BaseCommand {
             coloredCodes.add("<green>" + name + "</green>");
         });
 
-        final Map<String, String> placeholders = new HashMap<>();
+        Messages.vouchers_list.sendMessage(sender, new HashMap<>() {{
+            put("{total_vouchers}", String.valueOf(voucherCount));
+            put("{total_codes}", String.valueOf(codeCount));
 
-        placeholders.put("{total_vouchers}", String.valueOf(voucherCount));
-        placeholders.put("{total_codes}", String.valueOf(codeCount));
+            put("{active_vouchers}", String.valueOf(activeVouchers));
+            put("{active_codes}", String.valueOf(activeCodes));
 
-        placeholders.put("{active_vouchers}", String.valueOf(activeVouchers));
-        placeholders.put("{active_codes}", String.valueOf(activeCodes));
+            put("{broken_vouchers}", String.valueOf(inactiveVouchers));
+            put("{broken_codes}", String.valueOf(inactiveVouchers));
 
-        placeholders.put("{broken_vouchers}", String.valueOf(inactiveVouchers));
-        placeholders.put("{broken_codes}", String.valueOf(inactiveVouchers));
-
-        placeholders.put("{vouchers}", String.valueOf(coloredVouchers));
-        placeholders.put("{codes}", String.valueOf(coloredCodes));
-
-        Messages.vouchers_list.sendMessage(sender, placeholders);
+            put("{vouchers}", String.valueOf(coloredVouchers));
+            put("{codes}", String.valueOf(coloredCodes));
+        }});
     }
 }

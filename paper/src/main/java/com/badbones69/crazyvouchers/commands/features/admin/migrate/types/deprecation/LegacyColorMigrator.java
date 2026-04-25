@@ -5,8 +5,6 @@ import com.badbones69.crazyvouchers.api.enums.config.Messages;
 import com.badbones69.crazyvouchers.commands.features.admin.migrate.IVoucherMigrator;
 import com.badbones69.crazyvouchers.commands.features.admin.migrate.enums.MigrationType;
 import com.badbones69.crazyvouchers.config.types.ConfigKeys;
-import com.ryderbelserion.fusion.core.api.enums.Level;
-import com.ryderbelserion.fusion.kyori.utils.AdvUtils;
 import com.ryderbelserion.fusion.paper.files.types.PaperCustomFile;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
@@ -29,8 +27,8 @@ public class LegacyColorMigrator extends IVoucherMigrator {
         final List<String> success = new ArrayList<>();
 
         try {
-            this.config.setProperty(ConfigKeys.command_prefix, AdvUtils.convert(this.config.getProperty(ConfigKeys.command_prefix), true));
-            this.config.setProperty(ConfigKeys.dupe_protection_warning, AdvUtils.convert(this.config.getProperty(ConfigKeys.dupe_protection_warning), true));
+            this.config.setProperty(ConfigKeys.command_prefix, this.utils.convertLegacy(this.config.getProperty(ConfigKeys.command_prefix), true));
+            this.config.setProperty(ConfigKeys.dupe_protection_warning, this.utils.convertLegacy(this.config.getProperty(ConfigKeys.dupe_protection_warning), true));
 
             success.add("<green>⤷ config.yml");
 
@@ -72,7 +70,7 @@ public class LegacyColorMigrator extends IVoucherMigrator {
 
                     FileKeys.vouchers.save();
                 } else {
-                    this.fusion.log(Level.WARNING, "Failed to migrate vouchers.yml due to the configuration section being null.");
+                    this.fusion.log("warn", "Failed to migrate vouchers.yml due to the configuration section being null.");
 
                     failed.add("<red>⤷ vouchers.yml");
                 }
@@ -88,7 +86,7 @@ public class LegacyColorMigrator extends IVoucherMigrator {
 
                     FileKeys.codes.save();
                 } else {
-                    this.fusion.log(Level.WARNING, "Failed to migrate codes.yml due to the configuration section being null.");
+                    this.fusion.log("warn", "Failed to migrate codes.yml due to the configuration section being null.");
 
                     failed.add("<red>⤷ codes.yml");
                 }
@@ -97,7 +95,7 @@ public class LegacyColorMigrator extends IVoucherMigrator {
             case MULTIPLE -> {
                 final Path code_dir = this.dataPath.resolve("codes");
 
-                final List<Path> code_files = this.fusion.getFilesByPath(code_dir, ".yml");
+                final List<Path> code_files = this.fusion.getFiles(code_dir, ".yml");
 
                 for (final Path path : code_files) {
                     final Optional<PaperCustomFile> optional = this.fileManager.getPaperFile(path);
@@ -105,7 +103,7 @@ public class LegacyColorMigrator extends IVoucherMigrator {
                     final String fileName = path.getFileName().toString();
 
                     if (optional.isEmpty()) {
-                        this.fusion.log(Level.WARNING, "<red>%s</red> does not exist in the file cache", fileName);
+                        this.fusion.log("warn", "<red>{}</red> does not exist in the file cache", fileName);
 
                         failed.add("<red>⤷ " + fileName);
 
@@ -115,7 +113,7 @@ public class LegacyColorMigrator extends IVoucherMigrator {
                     final PaperCustomFile customFile = optional.get();
 
                     if (!customFile.isLoaded()) {
-                        this.fusion.log(Level.WARNING, "<red>%s</red> configuration is invalid, likely not loaded properly. Please check console :)", fileName);
+                        this.fusion.log("warn", "<red>{}</red> configuration is invalid, likely not loaded properly. Please check console :)", fileName);
 
                         failed.add("<red>⤷ " + fileName);
 
@@ -127,7 +125,7 @@ public class LegacyColorMigrator extends IVoucherMigrator {
                     final ConfigurationSection section = configuration.getConfigurationSection("voucher-code");
 
                     if (section == null) {
-                        this.fusion.log(Level.WARNING, "Configuration section for <red>%s</red> was not found.", fileName);
+                        this.fusion.log("warn", "Configuration section for <red>{}</red> was not found.", fileName);
 
                         failed.add("<red>⤷ " + fileName);
 
@@ -143,7 +141,7 @@ public class LegacyColorMigrator extends IVoucherMigrator {
 
                 final Path voucher_dir = this.dataPath.resolve("vouchers");
 
-                final List<Path> voucher_files = this.fusion.getFilesByPath(voucher_dir, ".yml");
+                final List<Path> voucher_files = this.fusion.getFiles(voucher_dir, ".yml");
 
                 for (final Path path : voucher_files) {
                     final Optional<PaperCustomFile> optional = this.fileManager.getPaperFile(path);
@@ -151,7 +149,7 @@ public class LegacyColorMigrator extends IVoucherMigrator {
                     final String fileName = path.getFileName().toString();
 
                     if (optional.isEmpty()) {
-                        this.fusion.log(Level.WARNING, "<red>%s</red> does not exist in the file cache", fileName);
+                        this.fusion.log("warn", "<red>{}</red> does not exist in the file cache", fileName);
 
                         failed.add("<red>⤷ " + fileName);
 
@@ -161,7 +159,7 @@ public class LegacyColorMigrator extends IVoucherMigrator {
                     final PaperCustomFile customFile = optional.get();
 
                     if (!customFile.isLoaded()) {
-                        this.fusion.log(Level.WARNING, "<red>%s</red> configuration is invalid, likely not loaded properly. Please check console :)", fileName);
+                        this.fusion.log("warn", "<red>{}</red> configuration is invalid, likely not loaded properly. Please check console :)", fileName);
 
                         failed.add("<red>⤷ " + fileName);
 
@@ -173,7 +171,7 @@ public class LegacyColorMigrator extends IVoucherMigrator {
                     final ConfigurationSection section = configuration.getConfigurationSection("voucher");
 
                     if (section == null) {
-                        this.fusion.log(Level.WARNING, "Configuration section for <red>%s</red> was not found.", fileName);
+                        this.fusion.log("warn", "Configuration section for <red>{}</red> was not found.", fileName);
 
                         failed.add("<red>⤷ " + fileName);
 
@@ -192,12 +190,10 @@ public class LegacyColorMigrator extends IVoucherMigrator {
         final int convertedCount = success.size();
         final int failedCount = failed.size();
 
-        final List<String> files = new ArrayList<>(failedCount + convertedCount);
-
-        files.addAll(failed);
-        files.addAll(success);
-
-        sendMessage(files, convertedCount, failedCount);
+        sendMessage(new ArrayList<>(failedCount + convertedCount) {{
+            addAll(failed);
+            addAll(success);
+        }}, convertedCount, failedCount);
 
         this.crazyManager.load(true);
     }
@@ -206,7 +202,7 @@ public class LegacyColorMigrator extends IVoucherMigrator {
         final String itemName = section.getString("name", name);
         final List<String> itemLore = section.getStringList("lore");
 
-        section.set("lore", AdvUtils.convert(itemLore, true));
+        section.set("lore", this.utils.convertLegacy(itemLore, true));
 
         final String optionsMessage = section.getString("options.message", "");
         final String optionsWorldMessage = section.getString("options.whitelist-worlds.message",
@@ -216,13 +212,13 @@ public class LegacyColorMigrator extends IVoucherMigrator {
         final String optionsBlacklistMessage = section.getString("options.permission.blacklist-permission.message",
                 "{prefix}You already have the permission <red>{permission} <gray>so you can''t use this voucher.");
 
-        section.set("name", AdvUtils.convert(itemName));
+        section.set("name", this.utils.convertLegacy(itemName));
 
-        section.set("options.message", AdvUtils.convert(optionsMessage));
-        section.set("options.whitelist-worlds.message", AdvUtils.convert(optionsWorldMessage));
+        section.set("options.message", this.utils.convertLegacy(optionsMessage));
+        section.set("options.whitelist-worlds.message", this.utils.convertLegacy(optionsWorldMessage));
 
-        section.set("options.permission.whitelist-permission.message", AdvUtils.convert(optionsWhitelistMessage));
-        section.set("options.permission.blacklist-permission.message", AdvUtils.convert(optionsBlacklistMessage));
+        section.set("options.permission.whitelist-permission.message", this.utils.convertLegacy(optionsWhitelistMessage));
+        section.set("options.permission.blacklist-permission.message", this.utils.convertLegacy(optionsBlacklistMessage));
     }
 
     private void process(@NotNull final ConfigurationSection section) {
@@ -236,11 +232,11 @@ public class LegacyColorMigrator extends IVoucherMigrator {
         final String optionsBlacklistMessage = section.getString("options.permission.blacklist-permission.message",
                 "{prefix}<red>You can not use that voucher here as you are not in a whitelisted world for this voucher.");
 
-        section.set("options.message", AdvUtils.convert(optionsMessage));
-        section.set("options.whitelist-worlds.message", AdvUtils.convert(optionsWorldMessage));
+        section.set("options.message", this.utils.convertLegacy(optionsMessage));
+        section.set("options.whitelist-worlds.message", this.utils.convertLegacy(optionsWorldMessage));
 
-        section.set("options.permission.whitelist-permission.message", AdvUtils.convert(optionsWhitelistMessage));
-        section.set("options.permission.blacklist-permission.message", AdvUtils.convert(optionsBlacklistMessage));
+        section.set("options.permission.whitelist-permission.message", this.utils.convertLegacy(optionsWhitelistMessage));
+        section.set("options.permission.blacklist-permission.message", this.utils.convertLegacy(optionsBlacklistMessage));
     }
 
     @Override

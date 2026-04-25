@@ -4,7 +4,6 @@ import com.badbones69.crazyvouchers.api.enums.FileSystem;
 import com.badbones69.crazyvouchers.commands.features.admin.migrate.IVoucherMigrator;
 import com.badbones69.crazyvouchers.commands.features.admin.migrate.enums.MigrationType;
 import com.badbones69.crazyvouchers.config.types.ConfigKeys;
-import com.ryderbelserion.fusion.core.api.enums.Level;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
@@ -25,7 +24,7 @@ public class VoucherFileMigrator extends IVoucherMigrator {
                 final Path oldPath = this.dataPath.resolve("voucher-codes.yml");
 
                 if (!Files.exists(oldPath)) {
-                    this.fusion.log(Level.WARNING, "The file %s does not exist at the path.", oldPath);
+                    this.fusion.log("warn", "The file {} does not exist at the path.", oldPath);
 
                     return;
                 }
@@ -39,7 +38,7 @@ public class VoucherFileMigrator extends IVoucherMigrator {
                         try {
                             Files.createDirectory(backup);
 
-                            this.fusion.log(Level.WARNING, "Successfully created the backup %s", backup);
+                            this.fusion.log("warn", "Successfully created the backup {}", backup);
                         } catch (final IOException exception) {
                             exception.printStackTrace();
                         }
@@ -48,7 +47,7 @@ public class VoucherFileMigrator extends IVoucherMigrator {
                     try {
                         Files.move(backup, newPath, StandardCopyOption.REPLACE_EXISTING);
 
-                        this.fusion.log(Level.WARNING, "Successfully moved %s to %s.", backup, newPath);
+                        this.fusion.log("warn", "Successfully moved {} to {}.", backup, newPath);
                     } catch (final IOException exception) {
                         exception.printStackTrace();
                     }
@@ -57,7 +56,7 @@ public class VoucherFileMigrator extends IVoucherMigrator {
                 try {
                     Files.move(oldPath, newPath, StandardCopyOption.REPLACE_EXISTING);
 
-                    this.fusion.log(Level.WARNING, "Successfully moved %s to %s.", oldPath, newPath);
+                    this.fusion.log("warn", "Successfully moved {} to {}.", oldPath, newPath);
                 } catch (final Exception exception) {
                     exception.printStackTrace();
                 }
