@@ -3,6 +3,7 @@ package com.badbones69.crazyvouchers.support;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -23,8 +24,13 @@ public class NexoSupport {
                                                 final int overrideCustomModelData,
                                                 final int amount) {
         try {
-            final Class<?> nexoItemsClass = Class.forName("com.nexomc.nexo.api.NexoItems");
-            final Class<?> itemBuilderClass = Class.forName("com.nexomc.nexo.items.ItemBuilder");
+            final Plugin nexoPlugin = Bukkit.getPluginManager().getPlugin("Nexo");
+            if (nexoPlugin == null) return null;
+
+            final ClassLoader nexoClassLoader = nexoPlugin.getClass().getClassLoader();
+
+            final Class<?> nexoItemsClass = Class.forName("com.nexomc.nexo.api.NexoItems", true, nexoClassLoader);
+            final Class<?> itemBuilderClass = Class.forName("com.nexomc.nexo.items.ItemBuilder", true, nexoClassLoader);
 
             final Method itemFromId = nexoItemsClass.getMethod("itemFromId", String.class);
             final Object builder = itemFromId.invoke(null, nexoId);
